@@ -1,5 +1,6 @@
 <?php
 require_once("connection.php");
+session_start();
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
 //retrieve data
@@ -244,4 +245,86 @@ try {
                 window.location.href = "error.php";
             </script>
         ';
+}
+
+try {
+    if (isset($_POST["username"]) && isset($_POST["password"])) {
+        if (!empty($_POST["username"]) && !empty($_POST["password"])) {
+
+            global $conn;
+
+            $username = $_POST["username"];
+            $user_data = mysqli_query($conn, "SELECT * FROM users WHERE username = '$username'");
+
+            if (mysqli_num_rows($user_data) == 1) {
+                while ($row = mysqli_fetch_assoc($user_data)) {
+                    $hash = $row["password"];
+                    if (password_verify($_POST["password"], $hash)) {
+                        $_SESSION["user"]["id"] = $row["id"];
+                        $_SESSION["user"]["username"] = $row["username"];
+                        echo $_SESSION["user"]["id"] . ' ' . $_SESSION["user"]["username"];
+                        header("Location: index.php");
+                    } else {
+                        echo '
+                            <div class="container py-5">
+                                <div class="row justify-content-center">
+                                <div class="col-12 col-md-8 col-lg-6">
+                
+                                    <!-- Error Message Alert -->
+                                    <div class="alert alert-warning text-center p-4 shadow-sm rounded-4" role="alert">
+                                        <h3 class="alert-heading text-danger mb-3">
+                                            <i class="bi bi-exclamation-triangle-fill"></i> Oops! Wrong password..
+                                        </h3>
+                                    </div>
+                
+                                </div>
+                                </div>
+                            </div>
+                        ';
+                    }
+                }
+            } else {
+                echo '
+                    <div class="container py-5">
+                        <div class="row justify-content-center">
+                        <div class="col-12 col-md-8 col-lg-6">
+
+                            <!-- Error Message Alert -->
+                            <div class="alert alert-warning text-center p-4 shadow-sm rounded-4" role="alert">
+                                <h3 class="alert-heading text-danger mb-3">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> Oops! User does not exist.
+                                </h3>
+                            </div>
+
+                        </div>
+                        </div>
+                    </div>
+        ';
+            }
+        } else {
+            echo '
+                <div class="col-12 col-md-8 col-lg-6 mx-auto mt-4">
+                    <div class="alert alert-dismissible fade show alert-warning d-flex align-items-center shadow-sm rounded-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2 fs-4"></i>
+                        <div class="fs-6">
+                        <strong>Warning:</strong> Please fill out all the required fields before submitting.
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </div>
+                </div>
+        ';
+        }
+    }
+} catch (mysqli_sql_exception $ex) {
+    $error_message = '[' . date("Y-m-d H:i:s") . ']' . ' SQL Error: ' . $ex->getMessage() . PHP_EOL;
+    error_log($error_message, 3, "error.txt");
+    echo '
+            <script>
+                window.location.href = "error.php";
+            </script>
+        ';
+}
+
+function log_out(){
+    unset($_SESSION["user"]);
 }
